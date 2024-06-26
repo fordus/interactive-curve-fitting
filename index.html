@@ -5,120 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interactive Curve Fitting</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              border: 'hsl(var(--border))',
+              input: 'hsl(var(--input))',
+              ring: 'hsl(var(--ring))',
+              background: 'hsl(var(--background))',
+              foreground: 'hsl(var(--foreground))',
+              primary: {
+                DEFAULT: 'hsl(var(--primary))',
+                foreground: 'hsl(var(--primary-foreground))'
+              },
+              secondary: {
+                DEFAULT: 'hsl(var(--secondary))',
+                foreground: 'hsl(var(--secondary-foreground))'
+              },
+              destructive: {
+                DEFAULT: 'hsl(var(--destructive))',
+                foreground: 'hsl(var(--destructive-foreground))'
+              },
+              muted: {
+                DEFAULT: 'hsl(var(--muted))',
+                foreground: 'hsl(var(--muted-foreground))'
+              },
+              accent: {
+                DEFAULT: 'hsl(var(--accent))',
+                foreground: 'hsl(var(--accent-foreground))'
+              },
+              popover: {
+                DEFAULT: 'hsl(var(--popover))',
+                foreground: 'hsl(var(--popover-foreground))'
+              },
+              card: {
+                DEFAULT: 'hsl(var(--card))',
+                foreground: 'hsl(var(--card-foreground))'
+              }
+            },
+            borderRadius: {
+              lg: 'var(--radius)',
+              md: 'calc(var(--radius) - 2px)',
+              sm: 'calc(var(--radius) - 4px)'
+            }
+          }
+        }
       }
-      textarea {
-        width: 100%;
-        height: 100px;
-      }
-      button {
-        margin-top: 10px;
-      }
-      #myChart {
-        margin-top: 20px;
-      }
-      #equation {
-        width: 100%;
-        margin-top: 10px;
+    </script>
+    <style type="text/css">
+      @layer base {
+        :root {
+          --background: 0 0% 100%;
+          --foreground: 222.2 84% 4.9%;
+          --card: 0 0% 100%;
+          --card-foreground: 222.2 84% 4.9%;
+          --popover: 0 0% 100%;
+          --popover-foreground: 222.2 84% 4.9%;
+          --primary: 222.2 47.4% 11.2%;
+          --primary-foreground: 210 40% 98%;
+          --secondary: 210 40% 96.1%;
+          --secondary-foreground: 222.2 47.4% 11.2%;
+          --muted: 210 40% 96.1%;
+          --muted-foreground: 215.4 16.3% 46.9%;
+          --accent: 210 40% 96.1%;
+          --accent-foreground: 222.2 47.4% 11.2%;
+          --destructive: 0 84.2% 60.2%;
+          --destructive-foreground: 210 40% 98%;
+          --border: 214.3 31.8% 91.4%;
+          --input: 214.3 31.8% 91.4%;
+          --ring: 222.2 84% 4.9%;
+          --radius: 0.5rem;
+        }
       }
     </style>
   </head>
-  <body>
-    <h1>Interactive Curve Fitting</h1>
-    <form id="curveForm">
-      <label for="points">Points (format x,y on each line):</label><br />
-      <textarea id="points" required></textarea><br />
-      <label for="maxDegree">Maximum degree of polynomial:</label>
-      <input type="number" id="maxDegree" min="1" value="4" required /><br />
-      <button type="submit">Calculate Fit</button>
+  <body class="bg-background text-foreground p-4 max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Interactive Curve Fitting</h1>
+    <form id="curveForm" class="space-y-4">
+      <div>
+        <label for="points" class="block text-sm font-medium mb-1"
+          >Points (format x,y on each line):</label
+        >
+        <textarea
+          id="points"
+          required
+          class="w-full h-32 px-3 py-2 text-sm rounded-md border border-input bg-transparent"
+        ></textarea>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="flex-1">
+          <label for="maxDegree" class="block text-sm font-medium mb-1"
+            >Maximum degree of polynomial:</label
+          >
+          <input
+            type="number"
+            id="maxDegree"
+            min="1"
+            value="4"
+            required
+            class="w-full px-3 py-2 text-sm rounded-md border border-input bg-transparent"
+          />
+        </div>
+        <div class="flex-1">
+          <label for="iterationTime" class="block text-sm font-medium mb-1"
+            >Iteration time (seconds):</label
+          >
+          <input
+            type="number"
+            id="iterationTime"
+            min="0.1"
+            step="0.1"
+            placeholder="1"
+            class="w-full px-3 py-2 text-sm rounded-md border border-input bg-transparent"
+          />
+        </div>
+      </div>
+      <button
+        type="submit"
+        class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
+      >
+        Calculate Fit
+      </button>
     </form>
-    <button id="exampleBtn">Run Example</button>
-    <canvas id="myChart" width="400" height="200"></canvas>
-    <div id="status"></div>
-    <input type="text" id="equation" readonly />
+    <button
+      id="exampleBtn"
+      class="mt-4 px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20"
+    >
+      Run Example
+    </button>
+    <canvas id="myChart" class="w-full mt-8" height="400"></canvas>
+    <div id="status" class="mt-4 text-sm text-muted-foreground"></div>
+    <input
+      type="text"
+      id="equation"
+      readonly
+      class="w-full mt-4 px-3 py-2 text-sm rounded-md border border-input bg-transparent"
+    />
+    <div id="areaResult" class="mt-4 text-sm font-medium"></div>
 
     <script>
       function polynomialRegression(points, degree) {
-        const n = points.length
-        const X = []
-        const Y = []
+        const X = points.map(p =>
+          Array.from({ length: degree + 1 }, (_, i) => Math.pow(p.x, i))
+        )
+        const y = points.map(p => p.y)
 
-        for (let i = 0; i < n; i++) {
-          X[i] = []
-          for (let j = 0; j <= degree; j++) {
-            X[i][j] = Math.pow(points[i].x, j)
+        const Xt = X[0].map((_, i) => X.map(row => row[i]))
+        const XtX = Xt.map(row =>
+          Xt[0].map((_, i) => row.reduce((sum, a, j) => sum + a * X[j][i], 0))
+        )
+        const Xty = Xt.map(row => row.reduce((sum, a, i) => sum + a * y[i], 0))
+
+        const augmentedMatrix = XtX.map((row, i) => [...row, Xty[i]])
+
+        for (let i = 0; i < augmentedMatrix.length; i++) {
+          const pivot = augmentedMatrix[i][i]
+          for (let j = i; j < augmentedMatrix[i].length; j++) {
+            augmentedMatrix[i][j] /= pivot
           }
-          Y[i] = [points[i].y]
-        }
-
-        function gaussianElimination(A, b) {
-          const n = A.length
-          for (let i = 0; i < n; i++) {
-            A[i].push(b[i][0])
-          }
-
-          for (let i = 0; i < n; i++) {
-            let maxEl = Math.abs(A[i][i])
-            let maxRow = i
-            for (let k = i + 1; k < n; k++) {
-              if (Math.abs(A[k][i]) > maxEl) {
-                maxEl = Math.abs(A[k][i])
-                maxRow = k
-              }
-            }
-
-            for (let k = i; k < n + 1; k++) {
-              const tmp = A[maxRow][k]
-              A[maxRow][k] = A[i][k]
-              A[i][k] = tmp
-            }
-
-            for (let k = i + 1; k < n; k++) {
-              const c = -A[k][i] / A[i][i]
-              for (let j = i; j < n + 1; j++) {
-                if (i === j) {
-                  A[k][j] = 0
-                } else {
-                  A[k][j] += c * A[i][j]
-                }
+          for (let k = 0; k < augmentedMatrix.length; k++) {
+            if (k !== i) {
+              const factor = augmentedMatrix[k][i]
+              for (let j = i; j < augmentedMatrix[k].length; j++) {
+                augmentedMatrix[k][j] -= factor * augmentedMatrix[i][j]
               }
             }
           }
-
-          const x = new Array(n).fill(0)
-          for (let i = n - 1; i > -1; i--) {
-            x[i] = A[i][n] / A[i][i]
-            for (let k = i - 1; k > -1; k--) {
-              A[k][n] -= A[k][i] * x[i]
-            }
-          }
-          return x
         }
 
-        function transposeMatrix(m) {
-          return m[0].map((_, i) => m.map(row => row[i]))
+        return augmentedMatrix.map(row => row[row.length - 1])
+      }
+
+      function calculateArea(coeffs, start, end) {
+        const integrate = x => {
+          return coeffs.reduce((sum, coeff, index) => {
+            return sum + (coeff / (index + 1)) * Math.pow(x, index + 1)
+          }, 0)
         }
-
-        function multiplyMatrices(a, b) {
-          return a.map(row =>
-            b[0].map((_, i) =>
-              row.reduce((sum, cell, j) => sum + cell * b[j][i], 0)
-            )
-          )
-        }
-
-        const Xt = transposeMatrix(X)
-        const XtX = multiplyMatrices(Xt, X)
-        const XtY = multiplyMatrices(Xt, Y)
-
-        const coefficients = gaussianElimination(XtX, XtY)
-
-        return coefficients
+        return integrate(end) - integrate(start)
       }
 
       const ctx = document.getElementById('myChart').getContext('2d')
@@ -127,68 +193,84 @@
         data: {
           datasets: [
             {
-              label: 'Original Points',
+              label: 'Data Points',
               data: [],
-              backgroundColor: 'rgb(255, 99, 132)'
+              backgroundColor: 'rgba(255, 99, 132, 1)'
             },
             {
               label: 'Fitted Curve',
               data: [],
               type: 'line',
-              borderColor: 'rgb(54, 162, 235)',
-              fill: false
+              borderColor: 'rgba(54, 162, 235, 1)',
+              fill: false,
+              tension: 0
             }
           ]
         },
         options: {
           responsive: true,
+          title: {
+            display: true,
+            text: 'Polynomial Regression'
+          },
           scales: {
-            x: { type: 'linear', position: 'bottom' }
+            x: {
+              type: 'linear',
+              position: 'bottom'
+            }
           }
         }
       })
 
       function updateChart(points, degree) {
-        try {
-          const coefficients = polynomialRegression(points, degree)
-          const fitted = x =>
-            coefficients.reduce(
-              (sum, coeff, i) => sum + coeff * Math.pow(x, i),
-              0
-            )
-          const fittedPoints = []
-          const xMin = Math.min(...points.map(p => p.x))
-          const xMax = Math.max(...points.map(p => p.x))
-          for (let x = xMin; x <= xMax; x += (xMax - xMin) / 100) {
-            fittedPoints.push({ x: x, y: fitted(x) })
-          }
-          chart.data.datasets[0].data = points
-          chart.data.datasets[1].data = fittedPoints
-          chart.update()
-          document.getElementById(
-            'status'
-          ).textContent = `Polynomial degree: ${degree}`
+        const coeffs = polynomialRegression(points, degree)
+        const equation = coeffs
+          .map((coeff, index) => {
+            if (index === 0) return coeff.toFixed(2)
+            if (index === 1) return `${coeff.toFixed(2)}x`
+            return `${coeff.toFixed(2)}x^${index}`
+          })
+          .reverse()
+          .join(' + ')
+        document.getElementById('equation').value = `y = ${equation}`
+        document.getElementById(
+          'status'
+        ).textContent = `Current polynomial degree: ${degree}`
 
-          // Display the equation
-          const equation = coefficients
-            .map((coeff, i) => `${coeff.toFixed(4)}${i > 0 ? `x^${i}` : ''}`)
-            .join(' + ')
-          document.getElementById('equation').value = `y = ${equation}`
-        } catch (error) {
-          console.error('Error in updateChart:', error)
-          document.getElementById(
-            'status'
-          ).textContent = `Error: ${error.message}`
+        const maxX = Math.max(...points.map(p => p.x))
+        const minX = Math.min(...points.map(p => p.x))
+        const area = calculateArea(coeffs, 0, maxX)
+        document.getElementById(
+          'areaResult'
+        ).textContent = `Area under the curve from 0 to ${maxX}: ${area.toFixed(
+          4
+        )}`
+
+        chart.data.datasets[0].data = points
+
+        // Generate more points for a smoother curve
+        const curvePoints = []
+        const numPoints = 100
+        for (let i = 0; i <= numPoints; i++) {
+          const x = minX + (i / numPoints) * (maxX - minX)
+          const y = coeffs.reduce(
+            (sum, coeff, index) => sum + coeff * Math.pow(x, index),
+            0
+          )
+          curvePoints.push({ x, y })
         }
+        chart.data.datasets[1].data = curvePoints
+
+        chart.update()
       }
 
-      function runFitting(points, maxDegree) {
+      function runFitting(points, maxDegree, iterationTime) {
         let degree = 1
         function updateLoop() {
           updateChart(points, degree)
           degree++
           if (degree <= maxDegree) {
-            setTimeout(updateLoop, 100)
+            setTimeout(updateLoop, iterationTime * 1000)
           }
         }
         updateLoop()
@@ -204,7 +286,9 @@
             return { x, y }
           })
           const maxDegree = parseInt(document.getElementById('maxDegree').value)
-          runFitting(points, maxDegree)
+          const iterationTime =
+            parseFloat(document.getElementById('iterationTime').value) || 1
+          runFitting(points, maxDegree, iterationTime)
         })
 
       document
@@ -221,7 +305,9 @@
             .map(p => `${p.x},${p.y}`)
             .join('\n')
           document.getElementById('maxDegree').value = 4
-          runFitting(examplePoints, 4)
+          document.getElementById('iterationTime').value = '' // Clear the field to use default
+          const iterationTime = 1 // Default to 1 second for the example
+          runFitting(examplePoints, 4, iterationTime)
         })
     </script>
   </body>
