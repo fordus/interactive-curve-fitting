@@ -22,6 +22,10 @@
       #myChart {
         margin-top: 20px;
       }
+      #equation {
+        width: 100%;
+        margin-top: 10px;
+      }
     </style>
   </head>
   <body>
@@ -36,6 +40,7 @@
     <button id="exampleBtn">Run Example</button>
     <canvas id="myChart" width="400" height="200"></canvas>
     <div id="status"></div>
+    <input type="text" id="equation" readonly />
 
     <script>
       function polynomialRegression(points, degree) {
@@ -113,12 +118,7 @@
 
         const coefficients = gaussianElimination(XtX, XtY)
 
-        return function (x) {
-          return coefficients.reduce(
-            (sum, coeff, i) => sum + coeff * Math.pow(x, i),
-            0
-          )
-        }
+        return coefficients
       }
 
       const ctx = document.getElementById('myChart').getContext('2d')
@@ -150,7 +150,12 @@
 
       function updateChart(points, degree) {
         try {
-          const fitted = polynomialRegression(points, degree)
+          const coefficients = polynomialRegression(points, degree)
+          const fitted = x =>
+            coefficients.reduce(
+              (sum, coeff, i) => sum + coeff * Math.pow(x, i),
+              0
+            )
           const fittedPoints = []
           const xMin = Math.min(...points.map(p => p.x))
           const xMax = Math.max(...points.map(p => p.x))
@@ -163,6 +168,12 @@
           document.getElementById(
             'status'
           ).textContent = `Polynomial degree: ${degree}`
+
+          // Display the equation
+          const equation = coefficients
+            .map((coeff, i) => `${coeff.toFixed(4)}${i > 0 ? `x^${i}` : ''}`)
+            .join(' + ')
+          document.getElementById('equation').value = `y = ${equation}`
         } catch (error) {
           console.error('Error in updateChart:', error)
           document.getElementById(
