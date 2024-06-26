@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Curve Fitting</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      textarea {
+        width: 100%;
+        height: 100px;
+      }
+      button {
+        margin-top: 10px;
+      }
+      #myChart {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Interactive Curve Fitting</h1>
+    <form id="curveForm">
+      <label for="points">Points (format x,y on each line):</label><br />
+      <textarea id="points" required></textarea><br />
+      <label for="maxDegree">Maximum degree of polynomial:</label>
+      <input type="number" id="maxDegree" min="1" value="4" required /><br />
+      <button type="submit">Calculate Fit</button>
+    </form>
+    <button id="exampleBtn">Run Example</button>
+    <canvas id="myChart" width="400" height="200"></canvas>
+    <div id="status"></div>
+
+    <script>
+      function polynomialRegression(points, degree) {
+        const n = points.length
+        const X = []
+        const Y = []
+
+        for (let i = 0; i < n; i++) {
+          X[i] = []
+          for (let j = 0; j <= degree; j++) {
+            X[i][j] = Math.pow(points[i].x, j)
+          }
+          Y[i] = [points[i].y]
+        }
+
+        function gaussianElimination(A, b) {
+          const n = A.length
+          for (let i = 0; i < n; i++) {
+            A[i].push(b[i][0])
+          }
+
+          for (let i = 0; i < n; i++) {
+            let maxEl = Math.abs(A[i][i])
+            let maxRow = i
+            for (let k = i + 1; k < n; k++) {
+              if (Math.abs(A[k][i]) > maxEl) {
+                maxEl = Math.abs(A[k][i])
+                maxRow = k
+              }
+            }
+
+            for (let k = i; k < n + 1; k++) {
+              const tmp = A[maxRow][k]
+              A[maxRow][k] = A[i][k]
+              A[i][k] = tmp
+            }
+
+            for (let k = i + 1; k < n; k++) {
+              const c = -A[k][i] / A[i][i]
+              for (let j = i; j < n + 1; j++) {
+                if (i === j) {
+                  A[k][j] = 0
+                } else {
+                  A[k][j] += c * A[i][j]
+                }
+              }
+            }
+          }
+
+          const x = new Array(n).fill(0)
+          for (let i = n - 1; i > -1; i--) {
+            x[i] = A[i][n] / A[i][i]
+            for (let k = i - 1; k > -1; k--) {
+              A[k][n] -= A[k][i] * x[i]
+            }
+          }
+          return x
+        }
+
+        function transposeMatrix(m) {
+          return m[0].map((_, i) => m.map(row => row[i]))
+        }
+
+        function multiplyMatrices(a, b) {
+          return a.map(row =>
+            b[0].map((_, i) =>
+              row.reduce((sum, cell, j) => sum + cell * b[j][i], 0)
+            )
+          )
+        }
+
+        const Xt = transposeMatrix(X)
+        const XtX = multiplyMatrices(Xt, X)
+        const XtY = multiplyMatrices(Xt, Y)
+
+        const coefficients = gaussianElimination(XtX, XtY)
+
+        return function (x) {
+          return coefficients.reduce(
+            (sum, coeff, i) => sum + coeff * Math.pow(x, i),
+            0
+          )
+        }
+      }
+
+      const ctx = document.getElementById('myChart').getContext('2d')
+      const chart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Original Points',
+              data: [],
+              backgroundColor: 'rgb(255, 99, 132)'
+            },
+            {
+              label: 'Fitted Curve',
+              data: [],
+              type: 'line',
+              borderColor: 'rgb(54, 162, 235)',
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { type: 'linear', position: 'bottom' }
+          }
+        }
+      })
+
+      function updateChart(points, degree) {
+        try {
+          const fitted = polynomialRegression(points, degree)
+          const fittedPoints = []
+          const xMin = Math.min(...points.map(p => p.x))
+          const xMax = Math.max(...points.map(p => p.x))
+          for (let x = xMin; x <= xMax; x += (xMax - xMin) / 100) {
+            fittedPoints.push({ x: x, y: fitted(x) })
+          }
+          chart.data.datasets[0].data = points
+          chart.data.datasets[1].data = fittedPoints
+          chart.update()
+          document.getElementById(
+            'status'
+          ).textContent = `Polynomial degree: ${degree}`
+        } catch (error) {
+          console.error('Error in updateChart:', error)
+          document.getElementById(
+            'status'
+          ).textContent = `Error: ${error.message}`
+        }
+      }
+
+      function runFitting(points, maxDegree) {
+        let degree = 1
+        function updateLoop() {
+          updateChart(points, degree)
+          degree++
+          if (degree <= maxDegree) {
+            setTimeout(updateLoop, 100)
+          }
+        }
+        updateLoop()
+      }
+
+      document
+        .getElementById('curveForm')
+        .addEventListener('submit', function (e) {
+          e.preventDefault()
+          const pointsText = document.getElementById('points').value
+          const points = pointsText.split('\n').map(line => {
+            const [x, y] = line.split(',').map(Number)
+            return { x, y }
+          })
+          const maxDegree = parseInt(document.getElementById('maxDegree').value)
+          runFitting(points, maxDegree)
+        })
+
+      document
+        .getElementById('exampleBtn')
+        .addEventListener('click', function () {
+          const examplePoints = [
+            { x: 0, y: 1 },
+            { x: 1, y: 3 },
+            { x: 2, y: 6 },
+            { x: 3, y: 8 },
+            { x: 4, y: 11 }
+          ]
+          document.getElementById('points').value = examplePoints
+            .map(p => `${p.x},${p.y}`)
+            .join('\n')
+          document.getElementById('maxDegree').value = 4
+          runFitting(examplePoints, 4)
+        })
+    </script>
+  </body>
+</html>
